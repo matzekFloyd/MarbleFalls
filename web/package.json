@@ -1,0 +1,18 @@
+{
+  "name": "marble-falls-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "p5": "^1.11.0"
+  },
+  "devDependencies": {
+    "@types/p5": "^1.7.6",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

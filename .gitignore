@@ -39,5 +39,6 @@ __pycache__/
 .venv/
 venv/
 
-# Node (if you add web/p5 tooling later)
+# Node (web: Vite + p5)
 node_modules/
+web/dist/

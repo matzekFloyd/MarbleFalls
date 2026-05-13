@@ -39,12 +39,35 @@ The Processing sketch maps raw touch ranges **approximately 150–1800** (X and 
 
 If opening serial fails or there is no port at `SERIAL_PORT_INDEX`, the sketch still starts and prints a short message to the **Processing console**. Use **mouse mode**: click in the **upper half** of the window (same region as touch-mapped spawns) to drop marbles and confirm the sim loop, edges, and collisions behave as expected.
 
+### Web (p5.js + TypeScript)
+
+The browser build lives in `web/`. It uses **npm** for **p5** (no CDN), **Vite** to bundle, and **TypeScript** so the sketch lines up with **`@types/p5`**: you get autocomplete and compile-time checks on the p5 instance API. The game runs in **p5 instance mode** (`new p5(...)`) so it works as ES modules with Vite; the same logic as the Processing port (edges, scoring, collisions, timed spawns). Input is **mouse or touch** in the upper half of the canvas (no USB serial in the browser).
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open the URL Vite prints (usually `http://localhost:5173/`). Production build:
+
+```bash
+npm run build
+npm run preview   # optional local check of dist/
+```
+
+Output is `web/dist/` — deploy that folder to static hosting. Tune parameters in `web/src/gameConfig.ts` (same fields as `GameConfig.pde`).
+
+**Netlify:** connect the repo and use the defaults; [`netlify.toml`](netlify.toml) sets **base directory** `web`, **build command** `npm run build`, and **publish directory** `dist` (relative to `web`, so `web/dist` on disk). Netlify runs `npm install` in `web/` before the build. Optional: set a custom domain in Site settings → Domain management.
+
 ## Repository layout
 
 | Path | Role |
 |------|------|
 | `arduino/MarbleFallsTouch/` | Touch reader firmware → USB serial |
 | `processing/MarbleFalls/` | Game sketch: `GameConfig`, serial/mouse input, marbles, edges, score, timer |
+| `web/` | Vite + TypeScript + **p5**; `npm run dev` / `npm run build` → `dist/` |
+| `netlify.toml` | Netlify: base `web`, publish `web/dist/` |
 
 ## License
 
