@@ -1,0 +1,6 @@
+name: Marble Falls
+paths:
+  - web
+paths-ignore:
+  - web/dist
+  - web/node_modules
