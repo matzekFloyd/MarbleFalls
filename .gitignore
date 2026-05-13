@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Arduino / PlatformIO (if added later)
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+*.hex
+*.eep
+*.elf
+build/
+*.o
+*.a
+
+# Processing / Java build leftovers (if you export or use tooling outside IDE)
+out/
+bin/
+*.class
+
+# Logs / local env
+*.log
+.env
+.env.*
+
+# Python (if you add scripts later)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node (if you add web/p5 tooling later)
+node_modules/

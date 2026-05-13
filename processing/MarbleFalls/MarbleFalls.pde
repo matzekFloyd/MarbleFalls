@@ -13,11 +13,11 @@ String portStream;
 int serialX;
 int serialY;
 
-//Variables, which values can be changed to setup a higher difficulty for the game
-int initialEdgeCount = 3; //cant be higher than 6
-int maxMarbles = 100;
-int addPoints = 50;
-int subtractPoints = 25;
+/** Index into Serial.list() for the Arduino; if out of range or open fails, sketch runs in mouse mode. */
+int SERIAL_PORT_INDEX = 3;
+boolean serialReady = false;
+
+GameConfig config;
 
 //Lists which save the currently active components of the game
 ArrayList<Marble> marbles = new ArrayList<Marble>();
@@ -28,22 +28,57 @@ Timer timer;
 int score;
 
 void setup() {  
+  config = new GameConfig();
   timer = new Timer(); 
   frameRate(50);  
   size(800, 1200);
   
-  String portName = Serial.list()[3];  //The usb-slot to which the arduino is connected
-  myPort = new Serial(this, portName, 9600); //start a Connection to arduino
-  myPort.bufferUntil('\n'); //read Data until '\n'
+  String[] ports = Serial.list();
+  if (ports.length > SERIAL_PORT_INDEX) {
+    try {
+      myPort = new Serial(this, ports[SERIAL_PORT_INDEX], 9600);
+      myPort.bufferUntil('\n');
+      serialReady = true;
+      println("Serial: " + ports[SERIAL_PORT_INDEX]);
+    } catch (Exception e) {
+      println("Serial open failed: " + e.getMessage());
+      println("Mouse mode: click the upper half of the window to spawn marbles.");
+    }
+  } else {
+    println("Serial list has no port at index " + SERIAL_PORT_INDEX + " (found " + ports.length + ").");
+    println("Mouse mode: click the upper half of the window to spawn marbles.");
+  }
 
-  println(initialize(initialEdgeCount)); //Initialize the game with set default values and print them to the console
+  println(initialize(config.initialEdgeCount)); //Initialize the game with set default values and print them to the console
+}
+
+void trySpawnMarble(float xMapped, float yMapped) {
+  if (marbles.size() <= config.maxMarbles) {
+    int radius = 10;
+    Marble newMarble = new Marble(xMapped, yMapped, radius);
+    marbles.add(newMarble);
+    println("CREATE MARBLE [x: "+xMapped+"; y: "+yMapped+"; radius: "+radius+"; speedX: "+newMarble.getSpeedX()+"; speedY:"+newMarble.getSpeedY()+"; outOfBoundsCounter: "+newMarble.getOutOfBoundsCounter()+"]");
+  }
+}
+
+void mousePressed() {
+  if (serialReady) return;
+  float offset = 50;
+  float yMaxSpawn = height / 2 - offset;
+  if (mouseY > yMaxSpawn) {
+    println("Click the upper half of the window to spawn a marble (y <= " + (int)yMaxSpawn + ").");
+    return;
+  }
+  float x = constrain(mouseX, offset, width - offset);
+  float y = constrain(mouseY, offset, yMaxSpawn);
+  trySpawnMarble(x, y);
 }
 
 String initialize(int edgeCount){
   timer.start();
   score = 0;
 
-  //Create a few edges depending on the value of initialEdgeCount Variable
+  //Create a few edges depending on config.initialEdgeCount (passed as edgeCount)
   if(edgeCount > 6) edgeCount = 6;
   for(int i = 0; i < edgeCount; i++){
      Edge newE = new Edge();
@@ -63,7 +98,7 @@ String initialize(int edgeCount){
      }
      edges.add(newE); 
   }
-  return "INIT[edges: "+edgeCount+"; max. Marbles: "+maxMarbles+"; Points: +"+addPoints+" -"+subtractPoints+"]";
+  return "INIT[edges: "+edgeCount+"; max. Marbles: "+config.maxMarbles+"; Points: +"+config.addPoints+" -"+config.subtractPoints+"]";
 }
 
 void serialEvent(Serial myPort) {
@@ -87,15 +122,7 @@ void serialEvent(Serial myPort) {
       if(xMapped < 0) xMapped = xMapped * -1;
       if(yMapped < 0) yMapped = yMapped * -1;
       
-    //Create a Marble at the position of the mapped coordinates
-    //Only possible if the maximum amount of marbles has not been reached yet
-    if(marbles.size() <= maxMarbles){
-      int radius = 10;
-      Marble newMarble = new Marble(xMapped,yMapped, radius);
-      marbles.add(newMarble); 
-      //Print the values of the newly created Marble to the console
-      println("CREATE MARBLE [x: "+xMapped+"; y: "+yMapped+"; radius: "+radius+"; speedX: "+newMarble.getSpeedX()+"; speedY:"+newMarble.getSpeedY()+"; outOfBoundsCounter: "+newMarble.getOutOfBoundsCounter()+"]");
-    } 
+      trySpawnMarble(xMapped, yMapped);
   }
 }
 
@@ -229,15 +256,15 @@ void handleCollisions(){
         if (marbles.size() > 0 && marbles.get(i).hit){
           if(edges.get(j).getPlusEdge() == true){
             println("COLLISION MARBLE POS EDGE [x1: "+edges.get(j).getEdgeX1()+"; y1: "+edges.get(j).getEdgeY1()+"; x2: "+edges.get(j).getEdgeX2()+"; y2: "+edges.get(j).getEdgeY2()+"; speedX: "+edges.get(j).getSpeedX()+"; speedY: "+edges.get(j).getSpeedY()+"; plusEdge: "+edges.get(j).getPlusEdge()+"; minusEdge: "+edges.get(j).getMinusEdge()+"; collisionEdge: "+edges.get(j).getCollisionEdge()+"]");
-            score = score + addPoints;
-            println("ADD POINTS TO SCORE [ +"+addPoints+"; new Score: "+score+" ]");
+            score = score + config.addPoints;
+            println("ADD POINTS TO SCORE [ +"+config.addPoints+"; new Score: "+score+" ]");
             marbles.remove(marbles.get(i));
             println("REMOVE MARBLE [x: "+marbles.get(i).getX()+"; y: "+marbles.get(i).getY()+"; radius: "+marbles.get(i).radius+"; speedX: "+marbles.get(i).getSpeedX()+"; speedY:"+marbles.get(i).getSpeedY()+"; outOfBoundsCounter: "+marbles.get(i).getOutOfBoundsCounter()+"]");
 
           } else if(edges.get(j).getMinusEdge() == true){
             println("COLLISION MARBLE MIN EDGE [x1: "+edges.get(j).getEdgeX1()+"; y1: "+edges.get(j).getEdgeY1()+"; x2: "+edges.get(j).getEdgeX2()+"; y2: "+edges.get(j).getEdgeY2()+"; speedX: "+edges.get(j).getSpeedX()+"; speedY: "+edges.get(j).getSpeedY()+"; plusEdge: "+edges.get(j).getPlusEdge()+"; minusEdge: "+edges.get(j).getMinusEdge()+"; collisionEdge: "+edges.get(j).getCollisionEdge()+"]");
-            score = score - subtractPoints;
-            println("SUBTRACT POINTS FROM SCORE [ -"+subtractPoints+"; new Score: "+score+" ]");
+            score = score - config.subtractPoints;
+            println("SUBTRACT POINTS FROM SCORE [ -"+config.subtractPoints+"; new Score: "+score+" ]");
             marbles.remove(marbles.get(i)); 
             println("REMOVE MARBLE [x: "+marbles.get(i).getX()+"; y: "+marbles.get(i).getY()+"; radius: "+marbles.get(i).radius+"; speedX: "+marbles.get(i).getSpeedX()+"; speedY:"+marbles.get(i).getSpeedY()+"; outOfBoundsCounter: "+marbles.get(i).getOutOfBoundsCounter()+"]");
 
@@ -263,7 +290,7 @@ void display(){
   textSize(16); 
   text(score, width - 75, 50);
   text("Marbles: "+countMarbles(), 50, height-75);
-  text("max.: "+maxMarbles, 50, height-50);
+  text("max.: "+config.maxMarbles, 50, height-50);
   text(nf(timer.hour(), 2)+":"+nf(timer.minute(), 2)+":"+nf(timer.second(), 2), 50, 50);
   text("©mt151062", width - 150, height-50);
   
@@ -291,7 +318,7 @@ void display(){
 
 //Count the amount of active marbles
 int countMarbles(){
-  if(marbles.size() == maxMarbles) println("MAXIMUM NUMBER OF MARBLES REACHED");
+  if(marbles.size() == config.maxMarbles) println("MAXIMUM NUMBER OF MARBLES REACHED");
   return marbles.size();
 }
 
